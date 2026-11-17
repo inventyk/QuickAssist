@@ -1,7 +1,7 @@
 import React,{useMemo,useRef,useState} from 'react';
 import {
  View,Text,TextInput,StyleSheet,Pressable,Switch,Alert,
- Animated,Easing,findNodeHandle
+ Animated,Easing
 } from 'react-native';
 import {services} from '../../../features/services/data/services';
 import type {ServiceCategory} from '../../../features/services/data/services';
@@ -29,16 +29,10 @@ export function CustomerBookingScreen({initialCategory,onDone,onCancel}:Props):R
  const [priority,setPriority]=useState(false);
  const [confirmed,setConfirmed]=useState(false);
  const [isAnimating,setIsAnimating]=useState(false);
+ const [quoteRowWidth,setQuoteRowWidth]=useState(0);
 
- // These refs measure the service marker and the basket target in this screen.
- const rootRef=useRef<View>(null);
- const sourceRef=useRef<View>(null);
- const basketRef=useRef<View>(null);
- const flyX=useRef(new Animated.Value(0)).current;
- const flyY=useRef(new Animated.Value(0)).current;
- const flyScale=useRef(new Animated.Value(1)).current;
- const flyOpacity=useRef(new Animated.Value(0)).current;
- const flyRotate=useRef(new Animated.Value(0)).current;
+ // A single progress value drives the flight path on web, Android and iOS.
+ const flightProgress=useRef(new Animated.Value(0)).current;
  const basketScale=useRef(new Animated.Value(1)).current;
  const ringScale=useRef(new Animated.Value(1)).current;
  const ringOpacity=useRef(new Animated.Value(0)).current;
@@ -50,63 +44,41 @@ export function CustomerBookingScreen({initialCategory,onDone,onCancel}:Props):R
  );
  const bookingCount=bookings.filter(b=>b.customerEmail===user?.email).length;
 
+ const flyX=flightProgress.interpolate({
+  inputRange:[0,0.5,1],
+  outputRange:[0,Math.max(0,(quoteRowWidth-51)/2),Math.max(0,quoteRowWidth-51)]
+ });
+ const flyY=flightProgress.interpolate({inputRange:[0,0.5,1],outputRange:[0,-44,0]});
+ const flyScale=flightProgress.interpolate({inputRange:[0,0.5,1],outputRange:[1,0.72,0.22]});
+ const flyOpacity=flightProgress.interpolate({inputRange:[0,0.88,1],outputRange:[1,1,0]});
+ const flyRotation=flightProgress.interpolate({inputRange:[0,1],outputRange:['0deg','360deg']});
+
  const animateServiceIntoBasket=()=>new Promise<void>(resolve=>{
-  const root=rootRef.current;
-  const source=sourceRef.current;
-  const basket=basketRef.current;
-  const rootNode=root?findNodeHandle(root):null;
-  if(!rootNode||!source||!basket){resolve();return;}
+  flightProgress.setValue(0);
+  basketScale.setValue(1);
+  ringScale.setValue(1);
+  ringOpacity.setValue(0);
 
-  source.measureLayout(rootNode,(sx,sy,sw,sh)=>{
-   basket.measureLayout(rootNode,(bx,by,bw,bh)=>{
-    const startX=sx+sw/2-27;
-    const startY=sy+sh/2-27;
-    const endX=bx+bw/2-27;
-    const endY=by+bh/2-27;
-    const middleX=(startX+endX)/2;
-    const middleY=(startY+endY)/2-58;
-
-    flyX.setValue(startX);
-    flyY.setValue(startY);
-    flyScale.setValue(1);
-    flyRotate.setValue(0);
-    flyOpacity.setValue(1);
-    basketScale.setValue(1);
-    ringScale.setValue(1);
-    ringOpacity.setValue(0);
-
-    // Two short legs create a soft upward arc, then the icon lands in the basket.
+  Animated.timing(flightProgress,{
+   toValue:1,
+   duration:610,
+   easing:Easing.bezier(0.22,0.75,0.28,1),
+   useNativeDriver:true
+  }).start(()=>{
+   Animated.parallel([
     Animated.sequence([
+     Animated.spring(basketScale,{toValue:1.2,speed:28,bounciness:13,useNativeDriver:true}),
+     Animated.spring(basketScale,{toValue:1,speed:24,bounciness:9,useNativeDriver:true})
+    ]),
+    Animated.sequence([
+     Animated.timing(ringOpacity,{toValue:0.75,duration:1,useNativeDriver:true}),
      Animated.parallel([
-      Animated.timing(flyX,{toValue:middleX,duration:270,easing:Easing.out(Easing.quad),useNativeDriver:true}),
-      Animated.timing(flyY,{toValue:middleY,duration:270,easing:Easing.out(Easing.quad),useNativeDriver:true}),
-      Animated.timing(flyScale,{toValue:0.72,duration:270,easing:Easing.out(Easing.quad),useNativeDriver:true}),
-      Animated.timing(flyRotate,{toValue:155,duration:270,easing:Easing.out(Easing.quad),useNativeDriver:true})
-     ]),
-     Animated.parallel([
-      Animated.timing(flyX,{toValue:endX,duration:290,easing:Easing.in(Easing.cubic),useNativeDriver:true}),
-      Animated.timing(flyY,{toValue:endY,duration:290,easing:Easing.in(Easing.cubic),useNativeDriver:true}),
-      Animated.timing(flyScale,{toValue:0.24,duration:290,easing:Easing.in(Easing.cubic),useNativeDriver:true}),
-      Animated.timing(flyRotate,{toValue:360,duration:290,easing:Easing.in(Easing.cubic),useNativeDriver:true}),
-      Animated.timing(flyOpacity,{toValue:0,duration:250,delay:40,useNativeDriver:true})
+      Animated.timing(ringScale,{toValue:2.15,duration:440,easing:Easing.out(Easing.quad),useNativeDriver:true}),
+      Animated.timing(ringOpacity,{toValue:0,duration:440,easing:Easing.out(Easing.quad),useNativeDriver:true})
      ])
-    ]).start(()=>{
-     Animated.parallel([
-      Animated.sequence([
-       Animated.spring(basketScale,{toValue:1.2,speed:28,bounciness:13,useNativeDriver:true}),
-       Animated.spring(basketScale,{toValue:1,speed:24,bounciness:9,useNativeDriver:true})
-      ]),
-      Animated.sequence([
-       Animated.timing(ringOpacity,{toValue:0.75,duration:1,useNativeDriver:true}),
-       Animated.parallel([
-        Animated.timing(ringScale,{toValue:2.15,duration:440,easing:Easing.out(Easing.quad),useNativeDriver:true}),
-        Animated.timing(ringOpacity,{toValue:0,duration:440,easing:Easing.out(Easing.quad),useNativeDriver:true})
-       ])
-      ])
-     ]).start(()=>resolve());
-    });
-   },()=>resolve());
-  },()=>resolve());
+    ])
+   ]).start(()=>resolve());
+  });
  });
 
  const submit=async()=>{
@@ -141,7 +113,7 @@ export function CustomerBookingScreen({initialCategory,onDone,onCancel}:Props):R
   <ActionButton label="View my bookings" onPress={onDone}/>
  </Panel>;
 
- return <View ref={rootRef} style={styles.screen}>
+ return <View style={styles.screen}>
   <PageHeading eyebrow="NEW TASK REQUEST" title="Tell us what needs doing" description="Complete these details to receive an indicative quote. The task is only created when you confirm below."/>
   <Panel>
    <Text style={styles.section}>1. Select a service</Text>
@@ -174,9 +146,25 @@ export function CustomerBookingScreen({initialCategory,onDone,onCancel}:Props):R
   </Panel>
 
   <Panel>
-   <View style={styles.quoteHeading}>
-    <Text style={styles.section}>3. Your estimated price</Text>
-    <View ref={sourceRef} collapsable={false} style={styles.serviceGlyph}><Text style={styles.serviceGlyphText}>{SERVICE_GLYPHS[category]}</Text></View>
+   <View
+    style={styles.quoteHeading}
+    onLayout={event=>setQuoteRowWidth(event.nativeEvent.layout.width)}
+   >
+    <View style={styles.serviceGlyph}><Text style={styles.serviceGlyphText}>{SERVICE_GLYPHS[category]}</Text></View>
+    <Text style={[styles.section,styles.quoteTitle]}>3. Your estimated price</Text>
+    <Animated.View style={[styles.basketTarget,{transform:[{scale:basketScale}]}]}>
+     <Animated.View pointerEvents="none" style={[styles.ripple,{opacity:ringOpacity,transform:[{scale:ringScale}]}]}/>
+     <Text style={styles.basketIcon}>🧺</Text>
+     <View style={styles.basketBadge}><Text style={styles.basketBadgeText}>{bookingCount}</Text></View>
+    </Animated.View>
+    <Animated.View pointerEvents="none" style={[styles.flyingIcon,{
+     opacity:flyOpacity,
+     transform:[
+      {translateX:flyX},{translateY:flyY},{scale:flyScale},{rotate:flyRotation}
+     ]
+    }]}>
+     <Text style={styles.flyingGlyph}>{SERVICE_GLYPHS[category]}</Text>
+    </Animated.View>
    </View>
    <View style={styles.priceLine}><Text style={styles.priceLabel}>Task base charge</Text><Text style={styles.priceValue}>₹{breakdown.base}</Text></View>
    {breakdown.distance>0?<View style={styles.priceLine}><Text style={styles.priceLabel}>Distance adjustment</Text><Text style={styles.priceValue}>₹{breakdown.distance}</Text></View>:null}
@@ -190,27 +178,11 @@ export function CustomerBookingScreen({initialCategory,onDone,onCancel}:Props):R
   <View style={styles.actions}>
    <View style={{flex:1}}><ActionButton label="Back" onPress={onCancel} secondary disabled={isAnimating}/></View>
    <View style={styles.confirmGroup}>
-    <Animated.View ref={basketRef} collapsable={false} style={[styles.basketTarget,{transform:[{scale:basketScale}]}]}>
-     <Animated.View pointerEvents="none" style={[styles.ripple,{opacity:ringOpacity,transform:[{scale:ringScale}]}]}/>
-     <Text style={styles.basketIcon}>🧺</Text>
-     <View style={styles.basketBadge}><Text style={styles.basketBadgeText}>{bookingCount}</Text></View>
-    </Animated.View>
     <Pressable disabled={isAnimating} onPress={submit} style={({pressed})=>[styles.confirmButton,(pressed||isAnimating)&&styles.confirmPressed]}>
      <Text style={styles.confirmText}>{isAnimating?'Adding task…':'Confirm task request →'}</Text>
     </Pressable>
    </View>
   </View>
-
-  {/* A temporary native Animated overlay follows the same service-to-basket flight on web and mobile. */}
-  <Animated.View pointerEvents="none" style={[styles.flyingIcon,{
-   opacity:flyOpacity,
-   transform:[
-    {translateX:flyX},{translateY:flyY},{scale:flyScale},
-    {rotate:flyRotate.interpolate({inputRange:[0,360],outputRange:['0deg','360deg']})}
-   ]
-  }]}>
-   <Text style={styles.flyingGlyph}>{SERVICE_GLYPHS[category]}</Text>
-  </Animated.View>
  </View>;
 }
 
@@ -233,8 +205,9 @@ const styles=StyleSheet.create({
  scheduleCopy:{color:'#829AB1',fontSize:9,marginTop:4},
  priorityRow:{flexDirection:'row',alignItems:'center',marginTop:17,borderTopWidth:1,borderTopColor:'#EDF1F3',paddingTop:10},
  small:{color:'#829AB1',fontSize:9,lineHeight:14,marginTop:6},
- quoteHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
- serviceGlyph:{width:48,height:48,borderRadius:13,backgroundColor:'#E8F5F1',alignItems:'center',justifyContent:'center',marginBottom:10},
+ quoteHeading:{position:'relative',flexDirection:'row',alignItems:'center',gap:10,minHeight:48,overflow:'visible'},
+ quoteTitle:{flex:1,marginBottom:0},
+ serviceGlyph:{width:48,height:48,borderRadius:13,backgroundColor:'#E8F5F1',alignItems:'center',justifyContent:'center'},
  serviceGlyphText:{fontSize:25},
  priceLine:{flexDirection:'row',justifyContent:'space-between',paddingVertical:7},
  priceLabel:{color:'#627D98',fontSize:10},
@@ -242,18 +215,18 @@ const styles=StyleSheet.create({
  totalLine:{flexDirection:'row',justifyContent:'space-between',paddingTop:12,marginTop:5,borderTopWidth:1,borderTopColor:'#E8EFF1'},
  totalLabel:{color:'#102A43',fontSize:12,fontWeight:'900'},
  totalValue:{color:'#0F766E',fontSize:21,fontWeight:'900'},
- actions:{flexDirection:'row',alignItems:'center',gap:9,marginTop:2,flexWrap:'wrap'},
- confirmGroup:{flex:2,minWidth:235,flexDirection:'row',alignItems:'center',gap:9},
  basketTarget:{width:48,height:48,borderRadius:14,backgroundColor:'#FFFFFF',borderWidth:1,borderColor:'#CFE8E0',alignItems:'center',justifyContent:'center'},
  basketIcon:{fontSize:22},
  basketBadge:{position:'absolute',right:-5,top:-6,minWidth:18,height:18,paddingHorizontal:4,borderRadius:9,backgroundColor:'#0F766E',alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:'#FFFFFF'},
  basketBadgeText:{color:'#FFFFFF',fontSize:9,fontWeight:'900'},
- ripple:{position:'absolute',inset:0,borderRadius:14,borderWidth:1.5,borderColor:'#0F766E'},
+ ripple:{position:'absolute',left:0,top:0,right:0,bottom:0,borderRadius:14,borderWidth:1.5,borderColor:'#0F766E'},
+ flyingIcon:{position:'absolute',top:0,left:0,width:54,height:54,zIndex:1000,elevation:12,alignItems:'center',justifyContent:'center'},
+ flyingGlyph:{fontSize:33},
+ actions:{flexDirection:'row',alignItems:'center',gap:9,marginTop:2,flexWrap:'wrap'},
+ confirmGroup:{flex:2,minWidth:235,flexDirection:'row',alignItems:'center',gap:9},
  confirmButton:{flex:1,minHeight:48,paddingHorizontal:14,paddingVertical:12,borderRadius:10,backgroundColor:'#0F766E',alignItems:'center',justifyContent:'center'},
  confirmPressed:{opacity:0.78},
  confirmText:{color:'#FFFFFF',fontSize:10,fontWeight:'900',textAlign:'center'},
- flyingIcon:{position:'absolute',top:0,left:0,width:54,height:54,zIndex:1000,elevation:12,alignItems:'center',justifyContent:'center'},
- flyingGlyph:{fontSize:33},
  success:{alignItems:'center',padding:30},
  successIcon:{width:54,height:54,lineHeight:54,textAlign:'center',backgroundColor:'#EAF7EB',borderRadius:27,color:'#27803D',fontSize:28,fontWeight:'900'},
  successTitle:{color:'#102A43',fontSize:20,fontWeight:'900',marginTop:12},
