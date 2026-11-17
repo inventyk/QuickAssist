@@ -14,6 +14,7 @@ type StoreValue = {
   addTicket: (subject: string, message: string) => void;
   updateTicketStatus: (id: string, status: SupportTicket['status']) => void;
   setHelperOnline: (id: string, online: boolean) => void;
+  setHelperVerified: (id: string, verified: boolean) => void;
 };
 const initialBookings: Booking[] = [
  { id:'QA-1001', customerName:'Ananya Shah', customerEmail:'ananya@example.com', category:'grocery', serviceTitle:'Grocery & Essentials', description:'Pick up weekly grocery essentials from the nearby store.', pickupAddress:'Koregaon Park, Pune', dropoffAddress:'Kalyani Nagar, Pune', scheduledFor:'Today · 5:30 PM', distanceKm:2.8, estimatedMinutes:30, quote:129, status:'finding_helper', createdAt:new Date().toISOString(), urgency:'standard' },
@@ -37,30 +38,19 @@ export function PlatformProvider({ children }: { children: ReactNode }): React.R
  const [priceOverrides,setPriceOverrides] = useState<Partial<Record<ServiceCategory,number>>>({});
  const [membershipByEmail,setMembershipByEmail] = useState<Record<string,string>>({});
  const login = useCallback((role:AppRole,name?:string,email?:string) => {
-  const defaults:Record<AppRole,{name:string;email:string}> = {
-   customer:{name:'Demo Customer',email:'customer@quickassist.demo'},
-   helper:{name:'Rahul Patil',email:'helper@quickassist.demo'},
-   admin:{name:'Platform Admin',email:'admin@quickassist.demo'}
-  };
-  const selected=defaults[role];
-  setUser({id:`${role}-demo`,role,name:name?.trim()||selected.name,email:email?.trim()||selected.email});
+  const defaults:Record<AppRole,{name:string;email:string}> = { customer:{name:'Demo Customer',email:'customer@quickassist.demo'}, helper:{name:'Rahul Patil',email:'helper@quickassist.demo'}, admin:{name:'Platform Admin',email:'admin@quickassist.demo'} };
+  const selected=defaults[role]; setUser({id:`${role}-demo`,role,name:name?.trim()||selected.name,email:email?.trim()||selected.email});
  },[]);
  const logout=useCallback(()=>setUser(null),[]);
- const createBooking=useCallback((input:NewBooking)=>{
-  const created:Booking={...input,id:`QA-${String(Date.now()).slice(-7)}`,status:'finding_helper',createdAt:new Date().toISOString()};
-  setBookings(current=>[created,...current]); return created;
- },[]);
- const updateBookingStatus=useCallback((id:string,status:BookingStatus,helperName?:string)=>{
-  setBookings(current=>current.map(item=>item.id===id?{...item,status,...(helperName?{helperName}:{})}:item));
- },[]);
+ const createBooking=useCallback((input:NewBooking)=>{const created:Booking={...input,id:`QA-${String(Date.now()).slice(-7)}`,status:'finding_helper',createdAt:new Date().toISOString()};setBookings(current=>[created,...current]);return created;},[]);
+ const updateBookingStatus=useCallback((id:string,status:BookingStatus,helperName?:string)=>setBookings(current=>current.map(item=>item.id===id?{...item,status,...(helperName?{helperName}:{})}:item)),[]);
  const updatePrice=useCallback((category:ServiceCategory,price:number)=>setPriceOverrides(current=>({...current,[category]:Math.max(0,Math.round(price))})),[]);
  const setMembership=useCallback((email:string,planId:string)=>setMembershipByEmail(current=>({...current,[email]:planId})),[]);
- const addTicket=useCallback((subject:string,message:string)=>{
-  setTickets(current=>[{id:`SUP-${String(Date.now()).slice(-5)}`,subject,message,customerName:user?.name??'Demo Customer',status:'open',createdAt:new Date().toISOString()},...current]);
- },[user]);
+ const addTicket=useCallback((subject:string,message:string)=>setTickets(current=>[{id:`SUP-${String(Date.now()).slice(-5)}`,subject,message,customerName:user?.name??'Demo Customer',status:'open',createdAt:new Date().toISOString()},...current]),[user]);
  const updateTicketStatus=useCallback((id:string,status:SupportTicket['status'])=>setTickets(current=>current.map(ticket=>ticket.id===id?{...ticket,status}:ticket)),[]);
  const setHelperOnline=useCallback((id:string,online:boolean)=>setHelpers(current=>current.map(helper=>helper.id===id?{...helper,online}:helper)),[]);
- const value=useMemo<StoreValue>(()=>({user,bookings,helpers,tickets,priceOverrides,membershipByEmail,login,logout,createBooking,updateBookingStatus,updatePrice,setMembership,addTicket,updateTicketStatus,setHelperOnline}),[user,bookings,helpers,tickets,priceOverrides,membershipByEmail,login,logout,createBooking,updateBookingStatus,updatePrice,setMembership,addTicket,updateTicketStatus,setHelperOnline]);
+ const setHelperVerified=useCallback((id:string,verified:boolean)=>setHelpers(current=>current.map(helper=>helper.id===id?{...helper,verified}:helper)),[]);
+ const value=useMemo<StoreValue>(()=>({user,bookings,helpers,tickets,priceOverrides,membershipByEmail,login,logout,createBooking,updateBookingStatus,updatePrice,setMembership,addTicket,updateTicketStatus,setHelperOnline,setHelperVerified}),[user,bookings,helpers,tickets,priceOverrides,membershipByEmail,login,logout,createBooking,updateBookingStatus,updatePrice,setMembership,addTicket,updateTicketStatus,setHelperOnline,setHelperVerified]);
  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 export function usePlatform():StoreValue { const context=useContext(StoreContext); if(!context) throw new Error('usePlatform must be used inside PlatformProvider'); return context; }
