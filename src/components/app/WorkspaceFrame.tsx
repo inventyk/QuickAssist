@@ -1,0 +1,27 @@
+import React from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import type { AppRole } from '../../core/models/platform';
+export type NavItem={key:string;label:string;icon:string};
+type Props={role:AppRole;name:string;activeKey:string;navItems:NavItem[];children:React.ReactNode;onNavigate:(key:string)=>void;onSwitchRole:()=>void;onLogout:()=>void};
+const roleLabels:Record<AppRole,string>={customer:'Customer space',helper:'Helper partner',admin:'Admin console'};
+export function WorkspaceFrame({role,name,activeKey,navItems,children,onNavigate,onSwitchRole,onLogout}:Props):React.ReactElement{
+ const desktop=useWindowDimensions().width>=900;
+ return <View style={styles.root}>
+  <View style={styles.topbar}>
+   <View style={styles.brandWrap}><View style={styles.logo}><Text style={styles.logoText}>Q</Text></View><View><Text style={styles.brand}>QuickAssist</Text><Text style={styles.roleLabel}>{roleLabels[role]}</Text></View></View>
+   <View style={styles.account}><View style={styles.avatar}><Text style={styles.avatarText}>{name.slice(0,1).toUpperCase()}</Text></View>{desktop?<Text numberOfLines={1} style={styles.userName}>{name}</Text>:null}<Pressable onPress={onSwitchRole} style={styles.switchButton}><Text style={styles.switchText}>Switch demo role</Text></Pressable><Pressable onPress={onLogout} style={styles.logoutButton}><Text style={styles.logoutText}>Log out</Text></Pressable></View>
+  </View>
+  <View style={styles.body}>
+   {desktop?<View style={styles.sidebar}><Text style={styles.sideCaption}>WORKSPACE</Text>{navItems.map(item=><Pressable key={item.key} onPress={()=>onNavigate(item.key)} style={[styles.sideItem,activeKey===item.key&&styles.sideItemActive]}><Text style={styles.sideIcon}>{item.icon}</Text><Text style={[styles.sideText,activeKey===item.key&&styles.sideTextActive]}>{item.label}</Text></Pressable>)}<View style={styles.sideBottom}><Text style={styles.sideBottomTitle}>Demo environment</Text><Text style={styles.sideBottomNote}>Changes are held in memory and reset on refresh.</Text></View></View>:null}
+   <ScrollView style={styles.contentScroll} contentContainerStyle={[styles.content,!desktop&&styles.contentMobile]} keyboardShouldPersistTaps="handled">{children}</ScrollView>
+  </View>
+  {!desktop?<View style={styles.mobileNav}>{navItems.map(item=><Pressable key={item.key} onPress={()=>onNavigate(item.key)} style={styles.mobileNavItem}><Text style={[styles.mobileIcon,activeKey===item.key&&styles.mobileIconActive]}>{item.icon}</Text><Text numberOfLines={1} style={[styles.mobileLabel,activeKey===item.key&&styles.mobileLabelActive]}>{item.label}</Text></Pressable>)}</View>:null}
+ </View>;
+}
+const styles=StyleSheet.create({
+ root:{flex:1,minHeight:'100%',backgroundColor:'#F4F7F8'},topbar:{minHeight:72,backgroundColor:'#FFFFFF',borderBottomWidth:1,borderBottomColor:'#E6EDF0',paddingHorizontal:22,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+ brandWrap:{flexDirection:'row',alignItems:'center',gap:11},logo:{width:39,height:39,borderRadius:13,backgroundColor:'#0F766E',alignItems:'center',justifyContent:'center'},logoText:{color:'#FFFFFF',fontWeight:'900',fontSize:23},brand:{color:'#102A43',fontWeight:'900',fontSize:18,letterSpacing:-0.4},roleLabel:{color:'#829AB1',fontWeight:'700',fontSize:9,letterSpacing:0.8,marginTop:1},
+ account:{flexDirection:'row',alignItems:'center',gap:9},avatar:{width:32,height:32,borderRadius:16,backgroundColor:'#E8F5F1',alignItems:'center',justifyContent:'center'},avatarText:{color:'#0F766E',fontWeight:'900'},userName:{color:'#334E68',fontWeight:'700',fontSize:12,maxWidth:130},switchButton:{paddingHorizontal:11,paddingVertical:9,borderRadius:9,backgroundColor:'#F1F5F6'},switchText:{color:'#52606D',fontSize:10,fontWeight:'800'},logoutButton:{paddingHorizontal:11,paddingVertical:9,borderRadius:9,backgroundColor:'#FFF0EE'},logoutText:{color:'#B42318',fontSize:10,fontWeight:'800'},
+ body:{flex:1,flexDirection:'row'},sidebar:{width:218,backgroundColor:'#FFFFFF',borderRightWidth:1,borderRightColor:'#E6EDF0',paddingHorizontal:14,paddingVertical:22},sideCaption:{color:'#9FB3C8',fontWeight:'900',fontSize:9,letterSpacing:1.4,marginHorizontal:11,marginBottom:13},sideItem:{flexDirection:'row',alignItems:'center',gap:11,borderRadius:10,paddingHorizontal:11,paddingVertical:12,marginBottom:4},sideItemActive:{backgroundColor:'#E8F5F1'},sideIcon:{fontSize:16,width:22,textAlign:'center'},sideText:{color:'#52606D',fontSize:12,fontWeight:'700'},sideTextActive:{color:'#0F766E',fontWeight:'900'},sideBottom:{marginTop:'auto',padding:12,backgroundColor:'#F4F7F8',borderRadius:11},sideBottomTitle:{color:'#52606D',fontSize:10,fontWeight:'900'},sideBottomNote:{color:'#829AB1',fontSize:9,lineHeight:14,marginTop:5},
+ contentScroll:{flex:1},content:{width:'100%',maxWidth:1180,alignSelf:'center',paddingHorizontal:26,paddingTop:28,paddingBottom:40},contentMobile:{paddingHorizontal:16,paddingTop:20,paddingBottom:28},mobileNav:{flexDirection:'row',backgroundColor:'#FFFFFF',borderTopWidth:1,borderTopColor:'#E6EDF0',paddingTop:8,paddingBottom:8,justifyContent:'space-around'},mobileNavItem:{alignItems:'center',justifyContent:'center',flex:1,paddingHorizontal:2,gap:2},mobileIcon:{fontSize:18,opacity:0.6},mobileIconActive:{opacity:1},mobileLabel:{color:'#829AB1',fontSize:9,fontWeight:'700'},mobileLabelActive:{color:'#0F766E',fontWeight:'900'}
+});

@@ -1,0 +1,12 @@
+import React from 'react';
+import {View,Text,StyleSheet,Switch} from 'react-native';
+import {usePlatform} from '../../../core/state/PlatformProvider';
+import {PageHeading,Panel,StatusPill} from '../../../components/ui/Blocks';
+export function AdminHelpersScreen():React.ReactElement{
+ const {helpers,setHelperOnline,setHelperVerified}=usePlatform();
+ return <View><PageHeading eyebrow="PARTNER NETWORK" title="Helper management" description="Review partner profiles, verification and service availability."/>
+ {helpers.map(h=><Panel key={h.id}><View style={styles.top}><View style={styles.avatar}><Text style={styles.avatarText}>{h.name.slice(0,1)}</Text></View><View style={{flex:1}}><Text style={styles.name}>{h.name}</Text><Text style={styles.meta}>{h.id} · {h.zone}</Text><Text style={styles.meta}>{h.email} · {h.phone}</Text></View><StatusPill label={h.verified?'Verified':'Pending'} tone={h.verified?'green':'amber'}/></View><View style={styles.row}><Text style={styles.label}>Online availability</Text><Switch value={h.online} onValueChange={value=>setHelperOnline(h.id,value)}/></View><View style={styles.row}><Text style={styles.label}>Identity review</Text><Switch value={h.verified} onValueChange={value=>setHelperVerified(h.id,value)}/></View><View style={styles.metrics}><Text style={styles.metric}>★ {h.rating?h.rating.toFixed(1):'New'}</Text><Text style={styles.metric}>{h.completedTasks} tasks</Text><Text style={styles.metric}>₹{h.payoutTotal.toLocaleString('en-IN')} paid*</Text></View></Panel>)}
+ <Text style={styles.note}>* Sample metrics. Verification toggle is a demo control only; real KYC must use secure provider checks and authorised reviewer actions.</Text>
+ </View>;
+}
+const styles=StyleSheet.create({top:{flexDirection:'row',alignItems:'center',gap:11},avatar:{width:42,height:42,borderRadius:21,backgroundColor:'#E8F5F1',alignItems:'center',justifyContent:'center'},avatarText:{color:'#0F766E',fontSize:16,fontWeight:'900'},name:{color:'#102A43',fontSize:12,fontWeight:'900'},meta:{color:'#829AB1',fontSize:9,marginTop:3},row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingVertical:10,borderTopWidth:1,borderTopColor:'#F0F3F5',marginTop:9},label:{color:'#52606D',fontSize:10,fontWeight:'800'},metrics:{flexDirection:'row',justifyContent:'space-between',paddingTop:9},metric:{color:'#0F766E',fontSize:9,fontWeight:'900'},note:{color:'#9FB3C8',fontSize:9,lineHeight:14}});

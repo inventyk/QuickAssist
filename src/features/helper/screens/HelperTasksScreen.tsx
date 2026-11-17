@@ -1,0 +1,18 @@
+import React from 'react';
+import {View,Text,StyleSheet} from 'react-native';
+import {usePlatform} from '../../../core/state/PlatformProvider';
+import {PageHeading,Panel,StatusPill,ActionButton,EmptyState} from '../../../components/ui/Blocks';
+import type {Booking,BookingStatus} from '../../../core/models/platform';
+const statusLabel:Record<BookingStatus,string>={requested:'New request',finding_helper:'Finding helper',assigned:'Assigned',accepted:'Accepted',on_the_way:'On the way',in_progress:'In progress',completed:'Completed',cancelled:'Cancelled'};
+export function HelperTasksScreen():React.ReactElement{
+ const {user,bookings,helpers,updateBookingStatus}=usePlatform();const me=helpers.find(h=>h.email===user?.email)||helpers[0];
+ const relevant=bookings.filter(b=>!['completed','cancelled'].includes(b.status)&&(b.helperName===user?.name||!b.helperName||b.status==='finding_helper'));
+ const next=(booking:Booking)=>{if(['finding_helper','requested'].includes(booking.status))updateBookingStatus(booking.id,'accepted',user?.name);else if(booking.status==='accepted'||booking.status==='assigned')updateBookingStatus(booking.id,'on_the_way',user?.name);else if(booking.status==='on_the_way')updateBookingStatus(booking.id,'in_progress',user?.name);else if(booking.status==='in_progress')updateBookingStatus(booking.id,'completed',user?.name);};
+ const action=(b:Booking)=>b.status==='finding_helper'||b.status==='requested'?'Accept task':b.status==='accepted'||b.status==='assigned'?'Start journey':b.status==='on_the_way'?'Start task':'Complete task';
+ return <View><PageHeading eyebrow="TASK MANAGEMENT" title="Your task board" description="Accept matching requests and update the customer as the task progresses."/>
+ {!me?.online?<Panel><Text style={styles.offline}>You are offline. Go online from Home to receive new task requests.</Text></Panel>:null}
+ {relevant.length===0?<EmptyState title="No tasks available" detail="New matching requests will appear here when a customer creates a task."/>:relevant.map(b=><Panel key={b.id}><View style={styles.row}><Text style={styles.title}>{b.serviceTitle}</Text><StatusPill label={statusLabel[b.status]} tone={b.status==='in_progress'?'green':'amber'}/></View><Text style={styles.description}>{b.description}</Text><View style={styles.info}><Text style={styles.infoText}>Customer: {b.customerName}</Text><Text style={styles.infoText}>Pickup: {b.pickupAddress}</Text><Text style={styles.infoText}>Drop: {b.dropoffAddress}</Text><Text style={styles.infoText}>Schedule: {b.scheduledFor}</Text></View><View style={styles.bottom}><View><Text style={styles.payout}>₹{Math.round(b.quote*0.5)}</Text><Text style={styles.payoutLabel}>Illustrative payout (50%)</Text></View><View style={{flex:1}}><ActionButton label={action(b)} onPress={()=>next(b)} disabled={!me?.online}/></View></View></Panel>)}
+ <Text style={styles.disclaimer}>Demo workflow: status updates are shared immediately with Customer and Admin screens. Real-time GPS, route navigation, task OTP and settlement are not connected yet.</Text>
+ </View>;
+}
+const styles=StyleSheet.create({row:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:7},title:{color:'#102A43',fontSize:13,fontWeight:'900',flex:1},description:{color:'#627D98',fontSize:10,lineHeight:16,marginTop:6},info:{gap:5,marginTop:11},infoText:{color:'#52606D',fontSize:10},bottom:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,borderTopWidth:1,borderTopColor:'#EDF1F3',marginTop:14,paddingTop:12},payout:{color:'#0F766E',fontSize:20,fontWeight:'900'},payoutLabel:{color:'#829AB1',fontSize:8},offline:{color:'#A76808',fontSize:11,lineHeight:18},disclaimer:{color:'#9FB3C8',fontSize:9,lineHeight:14,marginTop:12}});
