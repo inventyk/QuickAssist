@@ -1,40 +1,13 @@
-import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Header } from '../components/layout/Header';
-import { Footer } from '../components/layout/Footer';
-import { HomePage } from '../features/home/pages/HomePage';
-import { ServicesPage } from '../features/services/pages/ServicesPage';
-import { PricingPage } from '../features/pricing/pages/PricingPage';
-import { appConfig } from '../config/app.config';
-import { Reveal } from '../components/common/Reveal';
-import type { PageKey } from '../types/navigation';
-
-export function AppRoot(): React.ReactElement {
-  const [page, setPage] = useState<PageKey>('home');
-  const links = useMemo(() => [
-    { href: '/', label: 'Home', onPress: () => setPage('home') },
-    { href: '/services', label: 'Services', onPress: () => setPage('services') },
-    { href: '/pricing', label: 'Pricing', onPress: () => setPage('pricing') },
-  ], []);
-
-  return (
-    <View style={styles.app}>
-      <Header title={appConfig.name} currentPage={page} onNavigate={setPage} />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <Reveal key={page}>
-          {page === 'home'
-            ? <HomePage onNavigate={setPage} />
-            : page === 'services'
-              ? <ServicesPage onBook={() => setPage('home')} />
-              : <PricingPage />}
-        </Reveal>
-        <Footer links={links} />
-      </ScrollView>
-    </View>
-  );
+import React from 'react';
+import {usePlatform} from '../core/state/PlatformProvider';
+import {RoleLoginScreen} from '../features/auth/RoleLoginScreen';
+import {CustomerWorkspace} from '../features/customer/CustomerWorkspace';
+import {HelperWorkspace} from '../features/helper/HelperWorkspace';
+import {AdminWorkspace} from '../features/admin/AdminWorkspace';
+export function AppRoot():React.ReactElement{
+ const {user,login}=usePlatform();
+ if(!user)return <RoleLoginScreen onLogin={login}/>;
+ if(user.role==='customer')return <CustomerWorkspace onSwitchRole={()=>login('helper','Rahul Patil','helper@quickassist.demo')}/>;
+ if(user.role==='helper')return <HelperWorkspace onSwitchRole={()=>login('admin','Platform Admin','admin@quickassist.demo')}/>;
+ return <AdminWorkspace onSwitchRole={()=>login('customer','Demo Customer','customer@quickassist.demo')}/>;
 }
-const styles = StyleSheet.create({
-  app: { flex: 1, minHeight: '100%', backgroundColor: '#F7FAFC' },
-  scroll: { flex: 1 },
-  content: { flexGrow: 1 },
-});

@@ -1,27 +1,33 @@
 # QuickAssist
 
-A web-first, cross-platform personal errand and local assistance experience built with Expo, React Native, React Native Web, and TypeScript.
+One Expo React Native + TypeScript application with three role-based workspaces. The customer, helper and admin feature modules are intentionally isolated so they can later become separate app entry points without rewriting shared models and business logic.
 
-## Current website
-- Responsive landing page
-- Service catalogue with filters and service detail modal
-- Individual task starting prices
-- Optional monthly membership plans
-- FAQ and service journey sections
-- Cross-platform entrance and floating animations using React Native Animated
+## Roles in this build
+- **Customer**: Home, Services, task-specific booking, live indicative quote, Bookings, Membership, Profile and support ticket creation.
+- **Helper**: Online availability, shared task board, accept/start/complete task flow, earnings preview and partner profile.
+- **Admin**: Overview, shared booking management, helper online/verification controls, editable base prices, support tickets and operational settings.
 
-## Pricing approach
-Prices shown on the website are indicative starting prices. Final quotes depend on task scope, distance, duration, waiting, urgency, item count and complexity. Product purchases and transport costs are separate where applicable. A small platform fee is included in the displayed price and disclosed in the final breakdown.
+## Demo sign-in
+Select any role and choose **Quick demo access**.
+- Customer: customer@quickassist.demo
+- Helper: helper@quickassist.demo
+- Admin: admin@quickassist.demo
 
-Memberships are optional convenience plans. They do not include free tasks; each task is priced separately.
+## End-to-end demo test
+1. Sign in as Customer and create a booking.
+2. Tap **Switch demo role** to enter Helper. Accept the request, start journey, start task and complete it.
+3. Switch to Admin and inspect the same booking, helpers, pricing and support tickets.
+4. Switch back to Customer to see the updated booking status.
 
-## Development
+The shared state is local/in-memory and resets on refresh. Demo credentials do not authenticate a real person.
+
+## Run
 ```bash
 npm install
 npm run web
 ```
 
-Native development:
+Native:
 ```bash
 npm run android
 npm run ios
@@ -34,9 +40,11 @@ npm run build:web
 ```
 
 ## Architecture
-- `src/app`: app root and top-level navigation
-- `src/components`: reusable layout and animation components
-- `src/features`: feature-specific pages, components and data
-- `src/config`: pricing and application configuration
+- `src/features/customer`, `src/features/helper`, `src/features/admin`: role-specific workspaces and screens.
+- `src/core/models`: cross-role data contracts.
+- `src/core/state`: shared prototype store; replace this adapter with backend API/repository calls.
+- `src/core/pricing`: common quote calculation.
+- `src/components`: shared design system and navigation frame.
 
-This version is a frontend prototype. It does not yet process bookings, payments, user authentication, helper allocation, or live tracking. Do not advertise these as active capabilities until a backend is connected.
+## Not production-enabled
+Real authentication/OTP, server-side RBAC, persistent database, multi-device sync, secure dispatch, live GPS, push/SMS, KYC verification, payments/refunds/settlements, audit logs, privacy requests and compliance approvals still require backend services, provider accounts, security review and real-world operational testing. Until then, use only demo data.
